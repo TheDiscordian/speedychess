@@ -10,6 +10,7 @@ This client is a simple WASM client for interacting with the chess server.
 * go v1.14+
 * make
 * protoc (+protoc-gen-go)
+* python3
 
 ### Build
 

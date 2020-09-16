@@ -27,6 +27,7 @@ Note: Use `make dev` to test local changes.
 * go v1.14+
 * make
 * protoc (+protoc-gen-go)
+* python3
 
 ### Build
 
