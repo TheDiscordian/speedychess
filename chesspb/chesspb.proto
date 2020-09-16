@@ -1,0 +1,36 @@
+syntax = "proto3";
+package chessproto;
+
+option go_package = "./chesspb";
+
+message Ping {
+}
+
+message Join {
+	bool player = 1;
+}
+
+message NewGame {
+}
+
+message Move {
+	uint32 fx = 1; // from x
+	uint32 fy = 2; // from y
+	uint32 tx = 3; // to x
+	uint32 ty = 4; // to y
+}
+
+message Error {
+	string msg = 1;
+}
+
+message Team {
+	bool black = 1;
+}
+
+message Player {
+	bool One = 1;
+}
+
+message OpponentLeft {
+}

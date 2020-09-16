@@ -1,0 +1,8 @@
+server/server
+client/chess.wasm
+client/wasm_exec.js
+chesspb/chesspb.pb.go
+chesspb/pbgen.go
+flags/compile.go
+go.mod
+go.sum

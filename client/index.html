@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<meta charset="UTF-8">
+        <title>Chess</title>
+        <style>
+            body {
+                font-family:sans-serif;
+                color:#0f0f0f;
+                background-color:#D3D3D3;
+            }
+                
+            td {
+                width:1.5em;
+                height:1.45em;
+                padding-top:0.05em;
+                display:inline-block;
+                text-align:center;
+                font-size:5em;
+                border:1px solid;
+                margin-top:-0.05em;
+                margin-right:-1px;
+            }
+            
+            .coloured {
+				background-color:brown;
+            }
+
+            input {
+                border-radius:5px;
+                padding:0.25em;
+            }
+
+            textarea {
+                border-radius:5px;
+                display:inline-block;
+                vertical-align:middle;
+            }
+
+            .box {
+                display:block;
+                width:90%;
+                border-style:solid;
+                border-radius:7px;
+                border-width:1px;
+                margin: 0 auto;
+                padding:1em;
+                border-color:#D3D3D3;
+            }
+
+            .desc {
+                display:inline-block;
+                text-align:center;
+                width:10em;
+                font-weight:bold;
+                color:#202020;
+                font-size:0.9em;
+                vertical-align:middle;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div style="width:75%;margin: 0 auto;border:solid;border-width:1px;padding:1em;border-radius:3px;background-color:white;box-shadow: 5px 10px #888888;">
+        <h1 style="text-align:center;">Chess</h1>
+        <div id="chessboard" style="margin: 0 auto;width:65em;font-family:monospace;">
+        </div>
+        
+        <div style="margin:1em;">
+        <button id="join" type="button" disabled>Join (Player)</button> <button id="newgame" type="button" disabled>New Game</button>
+        </div>
+        
+        <div class="box"><span class="desc">Server Addr</span>
+        <input id="serveraddr" value="127.0.0.1:8181">
+        <button id="connect" type="button">Connect</button></div><br>
+        
+        <div class="box"><span class="desc">Console</span><div style="font-family:monospace;display:inline-block;vertical-align:middle;"><pre id="console"></pre></div>
+        
+        </div><br><br>
+        
+        <script src="wasm_exec.js"></script>
+        <script>
+            if (!WebAssembly.instantiateStreaming) {
+                // polyfill
+                WebAssembly.instantiateStreaming = async (resp, importObject) => {
+                    const source = await (await resp).arrayBuffer();
+                    return await WebAssembly.instantiate(source, importObject);
+                };
+            }
+
+            const go = new Go();
+
+            let mod, inst;
+
+            WebAssembly.instantiateStreaming(fetch("chess.wasm"), go.importObject).then(
+                async result => {
+                        mod = result.module;
+                        inst = result.instance;
+                        go.run(inst);
+                    }
+            );
+        </script>
+    </body>
+</html>
