@@ -1,31 +1,22 @@
 <!DOCTYPE html>
 <html>
-    <head>
-	<link id="themes" href="style.css" rel="stylesheet" type="text/css"/>
-	<link id="pagestyle" href="default.css" rel="stylesheet" type="text/css"/>
-	<link rel="icon" type="image/png" href="images/favicon.png"/>
-	<meta charset="UTF-8">
-        <title>Chess</title>
-	<script language="javascript">
-		function getUrlVars() {
-			var vars = {};
-			var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
-				vars[key] = value;
-			});
-			return vars;
-		}
-	</script>
-	<script language="javascript">
-		function changeCSS(cssFile) {
-			    document.getElementById("pagestyle").setAttribute("href", cssFile);
-		}
-		function changeCSS2(cssFile) {
-				document.getElementById("themes").setAttribute("href", cssFile);
-		}
-	</script>
-    </head>
-    <body>
-        <div id="maindiv">
+	<head>
+		<link id="themes" href="style.css" rel="stylesheet" type="text/css"/>
+		<link id="pagestyle" href="default.css" rel="stylesheet" type="text/css"/>
+		<link rel="icon" type="image/png" href="images/favicon.png"/>
+		<meta charset="UTF-8">
+		<title>Chess</title>
+		<script language="javascript">
+			function changeCSS(cssFile) {
+					document.getElementById("pagestyle").setAttribute("href", cssFile);
+			}
+			function changeCSS2(cssFile) {
+					document.getElementById("themes").setAttribute("href", cssFile);
+			}
+		</script>
+	</head>
+	<body>
+		<div id="maindiv">
 			<div class="header">
 				<div class="box">
 					<details open>
@@ -36,13 +27,13 @@
 						<input id="serveraddr" value="127.0.0.1:8181">
 						<button id="connect" type="button">Connect</button>
 						<div style="padding-top:0.5em; text-align:center;">
-							<button id="join" type="button" disabled>Join (Player)</button> 
+							<button id="join" type="button" disabled>Join (Player)</button>
 							<button id="newgame" type="button" disabled>New Game</button>
 						</div>
 						<br>
 						<div class="box">
 							<h1 class="desc">Style Options</h1>
-							<button href="#" onclick="changeCSS('default.css', 0);">Default</button> 
+							<button href="#" onclick="changeCSS('default.css', 0);">Default</button>
 							<button href="#" onclick="changeCSS('alternative.css', 0);">Alternative</button>
 							<br>
 							<button href="#" onclick="changeCSS2('style.css', 0);">Light Mode</button>
@@ -64,7 +55,7 @@
 					<span class="desc">Console</span>
 					<div id="consolestyle">
 						<pre id="console"></pre>
-					</div> 
+					</div>
 				</div>
 				<br>
 				<br>
@@ -93,5 +84,5 @@
 				);
 			</script>
 		</div>
-    </body>
+	</body>
 </html>
