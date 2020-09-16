@@ -1,0 +1,84 @@
+#♜ {
+	background-image: url("/pieces/BlackRook.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♖ {
+	background-image: url("/pieces/WhiteRook.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♞ {
+	background-image: url("/pieces/BlackKnight.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♘ {
+	background-image: url("/pieces/WhiteKnight.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♚ {
+	background-image: url("/pieces/BlackKing.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♔ {
+	background-image: url("/pieces/WhiteKing.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♛ {
+	background-image: url("/pieces/BlackQueen.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♕ {
+	background-image: url("/pieces/WhiteQueen.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♝ {
+	background-image: url("/pieces/BlackBishop.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♗ {
+	background-image: url("/pieces/WhiteBishop.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♟ {
+	background-image: url("/pieces/BlackPawn.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
+#♙ {
+	background-image: url("/pieces/WhitePawn.png");
+	background-size:cover;
+	display:block;
+	width:100%;
+	height:100%;
+}
