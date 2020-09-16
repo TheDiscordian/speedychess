@@ -1,3 +1,5 @@
+// Copyright (c) 2020, The SpeedyChess Contributors. All rights reserved.
+
 package chess
 
 type Piece rune

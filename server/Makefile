@@ -8,6 +8,7 @@ build:
 	protoc chesspb.proto --go_out=../ --proto_path=../chesspb/
 	python3 ../chesspb/helpergen.py
 	python3 ../flags/genconsts.py true
+	python3 ../tools/checklicense.py
 	go fmt github.com/TheDiscordian/speedychess/server github.com/TheDiscordian/speedychess/chess github.com/TheDiscordian/speedychess/flags github.com/TheDiscordian/speedychess/chesspb
 	go build
 
