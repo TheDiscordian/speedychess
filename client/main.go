@@ -116,7 +116,6 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 	}
 	StoredMove = []int8{x, y}
 	moves, enpassant := Game.PossibleMoves(x, y)
-	fmt.Println(enpassant)
 	for _, move := range moves {
 		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]))
 		square.Set("style", "background-color:red;border:1px dashed;")
