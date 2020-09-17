@@ -19,14 +19,6 @@ import (
 	"nhooyr.io/websocket"
 )
 
-/*
-	cb := chess.NewChessboard()
-	threats := cb.Threat(true)
-	for _, line := range(threats) {
-		fmt.Println(line)
-	}
-*/
-
 const (
 	WRITER_MAXBUFFER = 180               //how many packets to queue before dropping the connection
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
