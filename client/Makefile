@@ -12,6 +12,7 @@ build:
 	protoc chesspb.proto --go_out=../ --proto_path=../chesspb/
 	python3 ../chesspb/helpergen.py
 	python3 ../flags/genconsts.py false
+	python3 ../tools/checklicense.py
 	go fmt
 	GOOS=js GOARCH=wasm go build -o chess.wasm
 
