@@ -94,8 +94,17 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 	}
 	x, y := int8(args[0].Int()), int8(args[1].Int())
 	red := document.Call("getElementById", fmt.Sprintf("%dx%d", x, y)).Get("red").Truthy()
-	if red && StoredMove != nil {
-		C.Send(&chesspb.Move{Fx: uint32(StoredMove[0]), Fy: uint32(StoredMove[1]), Tx: uint32(x), Ty: uint32(y)})
+	redEnPassant := document.Call("getElementById", fmt.Sprintf("%dx%d", x, y)).Get("red-enpassant").Truthy()
+	if (red || redEnPassant) && StoredMove != nil {
+		var modifier int8
+		if redEnPassant {
+			if Black {
+				modifier = -1
+			} else {
+				modifier = 1
+			}
+		}
+		C.Send(&chesspb.Move{Fx: uint32(StoredMove[0]), Fy: uint32(StoredMove[1]), Tx: uint32(x), Ty: uint32(y + modifier), EnPassant: redEnPassant})
 		StoredMove = nil
 		document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 		return nil
@@ -106,10 +115,23 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 		return nil
 	}
 	StoredMove = []int8{x, y}
-	for _, move := range Game.PossibleMoves(x, y) {
+	moves, enpassant := Game.PossibleMoves(x, y)
+	fmt.Println(enpassant)
+	for _, move := range moves {
 		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]))
 		square.Set("style", "background-color:red;border:1px dashed;")
 		square.Set("red", true)
+	}
+	for _, move := range enpassant {
+		var modifier int8
+		if Black {
+			modifier = 1
+		} else {
+			modifier = -1
+		}
+		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]+modifier))
+		square.Set("style", "background-color:red;border:1px dashed;")
+		square.Set("red-enpassant", true)
 	}
 	return nil
 }
@@ -197,7 +219,11 @@ func connect(this js.Value, args []js.Value) interface{} {
 				Game = chess.NewChessboard()
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 			case *chesspb.Move:
-				Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				if !v.EnPassant {
+					Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				} else {
+					Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				}
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 				MyTurn = !MyTurn
 			case *chesspb.OpponentLeft:

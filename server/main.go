@@ -190,11 +190,15 @@ func handleConnection(conn net.Conn) {
 				c.Send(&chesspb.Error{Msg: "That's not your piece."})
 				continue
 			}
-			if !Game.IsLegal([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)}) {
+			if !Game.IsLegal([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)}, v.EnPassant) {
 				c.Send(&chesspb.Error{Msg: "That's not legal."})
 				continue
 			}
-			Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+			if !v.EnPassant {
+				Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+			} else {
+				Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+			}
 			WhiteClient.Send(v)
 			BlackClient.Send(v)
 			BlackMove = !BlackMove

@@ -31,7 +31,7 @@ func IsBlack(p Piece) bool {
 type Chessboard struct {
 	Board                                                                                [8][8]Piece
 	WhiteCantCastleLeft, WhiteCantCastleRight, BlackCantCastleLeft, BlackCantCastleRight bool
-	CanBeEnPassant                                                                       [][2]int8
+	CanBeEnPassant                                                                       *[2]int8
 }
 
 func NewChessboard() *Chessboard {
@@ -82,7 +82,7 @@ func (cb *Chessboard) move(x, y int8, black bool) (*[2]int8, bool) {
 
 // pawnMoves returns both moves and threatened spaces
 // TODO en passant
-func (cb *Chessboard) pawnMoves(x, y int8, black bool) (Moves, Threats [][2]int8) {
+func (cb *Chessboard) pawnMoves(x, y int8, black bool) (Moves, Threats [][2]int8, EnPassantKill *[2]int8) {
 	if black {
 		// regular movement
 		move, hit := cb.move(x, y+1, black)
@@ -144,6 +144,11 @@ func (cb *Chessboard) pawnMoves(x, y int8, black bool) (Moves, Threats [][2]int8
 		} else if hit {
 			Threats = append(Threats, [2]int8{x - 1, y - 1})
 		}
+	}
+	specialThreats := cb.canEnPassant(x, y)
+	if specialThreats != nil {
+		Threats = append(Threats, *specialThreats)
+		EnPassantKill = specialThreats
 	}
 	return
 }
@@ -352,6 +357,11 @@ func (cb *Chessboard) TestMove(from, to [2]int8) bool {
 
 // Performs a move and returns whether a move would result in a check for the opposing player
 func (cb *Chessboard) DoMove(from, to [2]int8) bool {
+	black := IsBlack(cb.Board[from[1]][from[0]])
+	cb.CanBeEnPassant = nil
+	if (black && from[1] == 1 && to[1] == 3 && cb.Board[from[1]][from[0]] == BlackPawn) || (!black && from[1] == 6 && to[1] == 4 && cb.Board[from[1]][from[0]] == WhitePawn) {
+		cb.CanBeEnPassant = &to
+	}
 	cb.Board[to[1]][to[0]] = cb.Board[from[1]][from[0]]
 	cb.Board[from[1]][from[0]] = 0
 	if cb.IsCheck(!IsBlack(cb.Board[to[1]][to[0]])) {
@@ -360,20 +370,68 @@ func (cb *Chessboard) DoMove(from, to [2]int8) bool {
 	return true
 }
 
+// Returns whether a move would result in a check for the player moving
+func (cb *Chessboard) TestEnPassant(from, to [2]int8) bool {
+	board := new(Chessboard)
+	*board = *cb
+	var modifier int8 // y modifier
+	if IsBlack(board.Board[from[1]][from[0]]) {
+		modifier = 1
+	} else {
+		modifier = -1
+	}
+	board.Board[to[1]][to[0]] = 0
+	board.Board[to[1]+modifier][to[0]] = board.Board[from[1]][from[0]]
+	board.Board[from[1]][from[0]] = 0
+	if board.IsCheck(IsBlack(board.Board[to[1]+modifier][to[0]])) {
+		return false
+	}
+	return true
+}
+
+// Performs a move and returns whether a move would result in a check for the opposing player
+func (cb *Chessboard) DoEnPassant(from, to [2]int8) bool {
+	var modifier int8 // y modifier
+	if IsBlack(cb.Board[from[1]][from[0]]) {
+		modifier = 1
+	} else {
+		modifier = -1
+	}
+	cb.Board[to[1]][to[0]] = 0
+	cb.Board[to[1]+modifier][to[0]] = cb.Board[from[1]][from[0]]
+	cb.Board[from[1]][from[0]] = 0
+	cb.CanBeEnPassant = nil
+	if cb.IsCheck(!IsBlack(cb.Board[to[1]+modifier][to[0]])) {
+		return false
+	}
+	return true
+}
+
 // Checks if a piece can move from the from position, to the to position.
-func (cb *Chessboard) IsLegal(from, to [2]int8) bool {
-	moves := cb.PossibleMoves(from[0], from[1])
-	for _, move := range moves {
-		if to == move {
-			return true
+func (cb *Chessboard) IsLegal(from, to [2]int8, enpassant bool) bool {
+	moves, enpassantkill := cb.PossibleMoves(from[0], from[1])
+	if !enpassant {
+		for _, move := range moves {
+			if to == move {
+				return true
+			}
+		}
+	} else {
+		for _, move := range enpassantkill {
+			if to == move {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 // Should return all legal moves by a piece at x, y.
-func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves [][2]int8) {
-	var Moves [][2]int8
+func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves, OutEnPassantKill [][2]int8) {
+	var (
+		Moves         [][2]int8
+		EnPassantKill *[2]int8
+	)
 	switch P := cb.Board[y][x]; P {
 	case BlackRook:
 		Moves = append(Moves, cb.rookMoves(x, y, true)...)
@@ -394,10 +452,12 @@ func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves [][2]int8) {
 		Moves = append(Moves, cb.rookMoves(x, y, false)...)
 		Moves = append(Moves, cb.bishopMoves(x, y, false)...)
 	case BlackPawn:
-		pawnMoves, _ := cb.pawnMoves(x, y, true)
+		var pawnMoves [][2]int8
+		pawnMoves, _, EnPassantKill = cb.pawnMoves(x, y, true)
 		Moves = append(Moves, pawnMoves...)
 	case WhitePawn:
-		pawnMoves, _ := cb.pawnMoves(x, y, false)
+		var pawnMoves [][2]int8
+		pawnMoves, _, EnPassantKill = cb.pawnMoves(x, y, false)
 		Moves = append(Moves, pawnMoves...)
 	case BlackKing:
 		Moves = append(Moves, cb.kingMoves(x, y, true)...)
@@ -410,30 +470,40 @@ func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves [][2]int8) {
 			OutMoves = append(OutMoves, move)
 		}
 	}
+	if EnPassantKill != nil {
+		move := *EnPassantKill
+		if cb.TestEnPassant(from, move) {
+			OutEnPassantKill = [][2]int8{move}
+		}
+	}
 	return
 }
 
-/*
-// CanEnPassant returns the possible spaces the pawn could jump to
-func (cb *Chessboard) CanEnPassant(x, y int8) [][2]int8 {
-	if cb.Board[y][x] != BlackPawn && cb.Board[y][x] != WhitePawn || len(cb.CanBeEnPassant) == 0 || y < 2 || y > 5 {
+// canEnPassant returns a piece the pawn in x, y could eliminate via en passant or nil.
+func (cb *Chessboard) canEnPassant(x, y int8) *[2]int8 {
+	if cb.Board[y][x] != BlackPawn && cb.Board[y][x] != WhitePawn || cb.CanBeEnPassant == nil || y < 2 || y > 5 {
 		return nil
 	}
-	out := make([][2]int8, 0)
+	var modifier int8 // y modifier
+	if IsBlack(cb.Board[y][x]) {
+		modifier = 1
+	} else {
+		modifier = -1
+	}
+	var out *[2]int8
 	black := IsBlack(cb.Board[y][x])
-	for _, move := range cb.CanEnPassant {
-		if y == move[1] && IsBlack(cb.Board[move[1]][move[0]]) != black {
-			if x > 0 && x-1 == move[0] {
-				out = append(out, [2]int8{move[0], move[1]})
-			}
-			if x < 7 && x+1 == move[0] {
-				out = append(out, [2]int8{move[0], move[1]})
-			}
+	move := *cb.CanBeEnPassant
+	if y == move[1] && IsBlack(cb.Board[move[1]][move[0]]) != black && cb.Board[move[1]+modifier][move[0]] == 0 {
+		if x > 0 && x-1 == move[0] {
+			out = &[2]int8{move[0], move[1]}
+		}
+		if x < 7 && x+1 == move[0] {
+			out = &[2]int8{move[0], move[1]}
 		}
 	}
 	return out
 }
-*/
+
 // PossibleThreats returns all the possibly threatened spaces, can contain duplicates
 func (cb *Chessboard) PossibleThreats(x, y int8) (Moves [][2]int8) {
 	switch P := cb.Board[y][x]; P {
@@ -452,10 +522,10 @@ func (cb *Chessboard) PossibleThreats(x, y int8) (Moves [][2]int8) {
 		Moves = append(Moves, cb.rookMoves(x, y, false)...)
 		Moves = append(Moves, cb.bishopMoves(x, y, false)...)
 	case BlackPawn:
-		_, pawnThreats := cb.pawnMoves(x, y, true)
+		_, pawnThreats, _ := cb.pawnMoves(x, y, true)
 		Moves = append(Moves, pawnThreats...)
 	case WhitePawn:
-		_, pawnThreats := cb.pawnMoves(x, y, false)
+		_, pawnThreats, _ := cb.pawnMoves(x, y, false)
 		Moves = append(Moves, pawnThreats...)
 	case BlackKing, WhiteKing:
 		Moves = append(Moves, cb.kingMoves(x, y, true)...)
