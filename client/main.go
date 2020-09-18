@@ -37,26 +37,28 @@ func LogToConsole(txt string) {
 }
 
 func drawBoard(flip bool) string {
-	// output := make([]byte, 0, width*7*height+(height+2)*4+10)
 	output := make([]rune, 0, 64*12+10)
 	output = append(output, []rune("<br>")...)
 	brown := false
+
+	createTile := func(x, y int, r chess.Piece) {
+		if !brown {
+			output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
+		} else {
+			output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="coloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
+		}
+		if r > 0 {
+			output = append(output, []rune(fmt.Sprintf(`<span id="%s"></span>`, string(r)))...)
+		}
+		output = append(output, []rune("</td>")...)
+		brown = !brown
+	}
 
 	if !flip {
 		for y, line := range Game.Board {
 			output = append(output, []rune("<tr>")...)
 			for x, r := range line {
-				if !brown {
-					output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="notcoloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
-				} else {
-					output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="coloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
-				}
-				if r > 0 {
-					output = append(output, []rune(fmt.Sprintf(`<span id="%s"></span>`, string(r)))...)
-					//output = append(output, rune(r))
-				}
-				output = append(output, []rune("</td>")...)
-				brown = !brown
+				createTile(x, y, r)
 			}
 			brown = !brown
 			output = append(output, []rune("</tr>")...)
@@ -65,18 +67,7 @@ func drawBoard(flip bool) string {
 		for y := len(Game.Board) - 1; y >= 0; y-- {
 			output = append(output, []rune("<tr>")...)
 			for x := len(Game.Board) - 1; x >= 0; x-- {
-				r := Game.Board[y][x]
-				if !brown {
-					output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
-				} else {
-					output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="coloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
-				}
-				if r > 0 {
-					output = append(output, []rune(fmt.Sprintf(`<span id="%s"></span>`, string(r)))...)
-					//output = append(output, rune(r))
-				}
-				output = append(output, []rune("</td>")...)
-				brown = !brown
+				createTile(x, y, Game.Board[y][x])
 			}
 			brown = !brown
 			output = append(output, []rune("</tr>")...)
@@ -125,7 +116,7 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 		return nil
 	}
 	StoredMove = []int8{x, y}
-	
+
 	moves, enpassant, castleleft, castleright := Game.PossibleMoves(x, y)
 	for _, move := range moves {
 		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]))
