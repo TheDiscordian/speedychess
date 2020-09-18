@@ -22,8 +22,8 @@ import (
 const (
 	WRITER_MAXBUFFER = 180               //how many packets to queue before dropping the connection
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
-	REQS_TIME        = 1 * time.Second
-	REQS_MAX         = 9 //max requests allowed within REQS_TIME
+	REQS_TIME        = 1 * time.Second   //
+	REQS_MAX         = 9                 //max requests allowed within REQS_TIME
 	PING_INTERVAL    = 10 * time.Second
 )
 
@@ -40,9 +40,10 @@ var (
 	GameRunning bool
 	Game        *chess.Chessboard
 
-	BlackClient *chesspb.Client
-	WhiteClient *chesspb.Client
-	BlackMove   bool // if true, it's black's move
+	BlackClient   *chesspb.Client
+	WhiteClient   *chesspb.Client
+	BlackMove     bool  // if true, it's black's move
+	NeedPromotion Color // represents a colour that needs to promote a pawn for the game to continue
 )
 
 // TODO keep observers alive
@@ -173,10 +174,35 @@ func handleConnection(conn net.Conn) {
 			} else {
 				c.Send(&chesspb.Error{Msg: "Only player 1 can start a game."})
 			}
+		case *chesspb.Promote:
+			if !GameRunning {
+				c.Send(&chesspb.Error{Msg: "Game has not started."})
+				continue
+			}
+			if NeedPromotion != color {
+				c.Send(&chesspb.Error{Msg: "You're not ready for a promotion yet."})
+				continue
+			}
+			if !Game.PromotePawn(int8(v.X), int8(v.Y), chess.Piece(v.To)) {
+				c.Send(&chesspb.Error{Msg: "Invalid selection."})
+				continue
+			}
+			NeedPromotion = None
+			WhiteClient.Send(v)
+			BlackClient.Send(v)
 		case *chesspb.Move:
 			if !GameRunning {
 				c.Send(&chesspb.Error{Msg: "Game has not started."})
 				continue
+			}
+			if NeedPromotion != None {
+				if NeedPromotion == Black {
+					c.Send(&chesspb.Error{Msg: "Waiting on black to pick a promotion."})
+					continue
+				} else {
+					c.Send(&chesspb.Error{Msg: "Waiting on white to pick a promotion."})
+					continue
+				}
 			}
 			if (color != Black && BlackMove) || (color != White && !BlackMove) {
 				c.Send(&chesspb.Error{Msg: "It's not your turn."})
@@ -197,6 +223,19 @@ func handleConnection(conn net.Conn) {
 			switch chess.MoveType(v.MoveType) {
 			case chess.RegularMove:
 				Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				if (v.Ty == 7 || v.Ty == 0) && (Game.Board[v.Ty][v.Tx] == chess.WhitePawn || Game.Board[v.Ty][v.Tx] == chess.BlackPawn) {
+					black := chess.IsBlack(Game.Board[v.Ty][v.Tx])
+					if black {
+						NeedPromotion = Black
+					} else {
+						NeedPromotion = White
+					}
+					if black {
+						BlackClient.Send(new(chesspb.Promote))
+					} else {
+						WhiteClient.Send(new(chesspb.Promote))
+					}
+				}
 			case chess.EnPassant:
 				Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 			case chess.CastleLeft:

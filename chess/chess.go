@@ -479,6 +479,29 @@ func (cb *Chessboard) DoCastle(from [2]int8, left bool) bool {
 	return true
 }
 
+// PromotePawn promotes a pawn at x, y, returns true on success, and false on failure.
+func (cb *Chessboard) PromotePawn(x, y int8, to Piece) bool {
+	if y != 0 && y != 7 {
+		return false
+	}
+	piece := cb.Board[y][x]
+	black := IsBlack(piece)
+	switch piece {
+	case WhiteRook, WhiteKnight, WhiteQueen, WhiteBishop:
+		if !black {
+			cb.Board[y][x] = to
+			return true
+		}
+	case BlackRook, BlackKnight, BlackQueen, BlackBishop:
+		if black {
+			cb.Board[y][x] = to
+			return true
+		}
+	}
+
+	return false
+}
+
 type MoveType int
 
 const (

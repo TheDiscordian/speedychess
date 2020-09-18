@@ -41,3 +41,9 @@ message Player {
 
 message OpponentLeft {
 }
+
+message Promote {
+	uint32 x = 1; // x
+	uint32 y = 2; // y
+	int32 to = 3; // specify piece to promote to
+}
