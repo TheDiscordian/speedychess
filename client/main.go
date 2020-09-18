@@ -89,22 +89,32 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 	window := js.Global()
 	document := window.Get("document")
 
+	var movet chess.MoveType
+
 	if Game == nil || !MyTurn {
 		return nil
 	}
 	x, y := int8(args[0].Int()), int8(args[1].Int())
-	red := document.Call("getElementById", fmt.Sprintf("%dx%d", x, y)).Get("red").Truthy()
-	redEnPassant := document.Call("getElementById", fmt.Sprintf("%dx%d", x, y)).Get("red-enpassant").Truthy()
-	if (red || redEnPassant) && StoredMove != nil {
+	tile := document.Call("getElementById", fmt.Sprintf("%dx%d", x, y))
+	red := tile.Get("red").Truthy()
+	redEnPassant := tile.Get("red-enpassant").Truthy()
+	redCastleLeft := tile.Get("red-castleleft").Truthy()
+	redCastleRight := tile.Get("red-castleright").Truthy()
+	if (red || redEnPassant || redCastleLeft || redCastleRight) && StoredMove != nil {
 		var modifier int8
 		if redEnPassant {
+			movet = chess.EnPassant
 			if Black {
 				modifier = -1
 			} else {
 				modifier = 1
 			}
+		} else if redCastleLeft {
+			movet = chess.CastleLeft
+		} else if redCastleRight {
+			movet = chess.CastleRight
 		}
-		C.Send(&chesspb.Move{Fx: uint32(StoredMove[0]), Fy: uint32(StoredMove[1]), Tx: uint32(x), Ty: uint32(y + modifier), EnPassant: redEnPassant})
+		C.Send(&chesspb.Move{Fx: uint32(StoredMove[0]), Fy: uint32(StoredMove[1]), Tx: uint32(x), Ty: uint32(y + modifier), MoveType: chesspb.Move_MoveType(movet)})
 		StoredMove = nil
 		document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 		return nil
@@ -115,7 +125,8 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 		return nil
 	}
 	StoredMove = []int8{x, y}
-	moves, enpassant := Game.PossibleMoves(x, y)
+	
+	moves, enpassant, castleleft, castleright := Game.PossibleMoves(x, y)
 	for _, move := range moves {
 		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]))
 		square.Set("style", "background-color:red;border:1px dashed;")
@@ -131,6 +142,16 @@ func selectPiece(this js.Value, args []js.Value) interface{} {
 		square := document.Call("getElementById", fmt.Sprintf("%dx%d", move[0], move[1]+modifier))
 		square.Set("style", "background-color:red;border:1px dashed;")
 		square.Set("red-enpassant", true)
+	}
+	if castleleft {
+		square := document.Call("getElementById", fmt.Sprintf("%dx%d", x-2, y))
+		square.Set("style", "background-color:red;border:1px dashed;")
+		square.Set("red-castleleft", true)
+	}
+	if castleright {
+		square := document.Call("getElementById", fmt.Sprintf("%dx%d", x+2, y))
+		square.Set("style", "background-color:red;border:1px dashed;")
+		square.Set("red-castleright", true)
 	}
 	return nil
 }
@@ -218,10 +239,15 @@ func connect(this js.Value, args []js.Value) interface{} {
 				Game = chess.NewChessboard()
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 			case *chesspb.Move:
-				if !v.EnPassant {
+				switch chess.MoveType(v.MoveType) {
+				case chess.RegularMove:
 					Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
-				} else {
+				case chess.EnPassant:
 					Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				case chess.CastleLeft:
+					Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
+				case chess.CastleRight:
+					Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
 				}
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 				MyTurn = !MyTurn

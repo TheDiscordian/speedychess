@@ -18,7 +18,13 @@ message Move {
 	uint32 fy = 2; // from y
 	uint32 tx = 3; // to x
 	uint32 ty = 4; // to y
-	bool   enPassant = 5; // perform en passant
+	enum MoveType {
+		RegularMove = 0;
+		EnPassant = 1;
+		CastleLeft = 2;
+		CastleRight = 3;
+	}
+	MoveType   moveType = 5;
 }
 
 message Error {

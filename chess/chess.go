@@ -343,7 +343,7 @@ func (cb *Chessboard) IsCheck(black bool) bool {
 	return cb.Threat(!black)[ky][kx]
 }
 
-// Returns whether a move would result in a check for the player moving
+// Returns false if the move would put the player moving in check
 func (cb *Chessboard) TestMove(from, to [2]int8) bool {
 	board := new(Chessboard)
 	*board = *cb
@@ -362,6 +362,29 @@ func (cb *Chessboard) DoMove(from, to [2]int8) bool {
 	if (black && from[1] == 1 && to[1] == 3 && cb.Board[from[1]][from[0]] == BlackPawn) || (!black && from[1] == 6 && to[1] == 4 && cb.Board[from[1]][from[0]] == WhitePawn) {
 		cb.CanBeEnPassant = &to
 	}
+	if black {
+		if cb.Board[from[1]][from[0]] == BlackKing {
+			cb.BlackCantCastleLeft = true
+			cb.BlackCantCastleRight = true
+		} else if cb.Board[from[1]][from[0]] == BlackRook {
+			if from[0] == 0 && from[0] == 7 {
+				cb.BlackCantCastleLeft = true
+			} else if from[0] == 7 && from[0] == 7 {
+				cb.BlackCantCastleRight = true
+			}
+		}
+	} else {
+		if cb.Board[from[1]][from[0]] == WhiteKing {
+			cb.WhiteCantCastleLeft = true
+			cb.WhiteCantCastleRight = true
+		} else if cb.Board[from[1]][from[0]] == WhiteRook {
+			if from[0] == 0 && from[0] == 0 {
+				cb.WhiteCantCastleLeft = true
+			} else if from[0] == 7 && from[0] == 0 {
+				cb.WhiteCantCastleRight = true
+			}
+		}
+	}
 	cb.Board[to[1]][to[0]] = cb.Board[from[1]][from[0]]
 	cb.Board[from[1]][from[0]] = 0
 	if cb.IsCheck(!IsBlack(cb.Board[to[1]][to[0]])) {
@@ -370,7 +393,7 @@ func (cb *Chessboard) DoMove(from, to [2]int8) bool {
 	return true
 }
 
-// Returns whether a move would result in a check for the player moving
+// Returns false if the move would put the player moving in check
 func (cb *Chessboard) TestEnPassant(from, to [2]int8) bool {
 	board := new(Chessboard)
 	*board = *cb
@@ -407,27 +430,105 @@ func (cb *Chessboard) DoEnPassant(from, to [2]int8) bool {
 	return true
 }
 
+// Returns false if the move would put the player moving in check
+func (cb *Chessboard) TestCastle(from [2]int8, left bool) bool {
+	board := new(Chessboard)
+	*board = *cb
+	black := IsBlack(board.Board[from[1]][from[0]])
+	if left {
+		board.Board[from[1]][2] = board.Board[from[1]][from[0]]
+		board.Board[from[1]][from[0]] = 0
+		board.Board[from[1]][3] = board.Board[from[1]][0]
+		board.Board[from[1]][0] = 0
+	} else {
+		board.Board[from[1]][6] = board.Board[from[1]][from[0]]
+		board.Board[from[1]][from[0]] = 0
+		board.Board[from[1]][5] = board.Board[from[1]][7]
+		board.Board[from[1]][7] = 0
+	}
+	if board.IsCheck(black) {
+		return false
+	}
+	return true
+}
+
+// Performs a move and returns whether a move would result in a check for the opposing player
+func (cb *Chessboard) DoCastle(from [2]int8, left bool) bool {
+	black := IsBlack(cb.Board[from[1]][from[0]])
+	if left {
+		cb.Board[from[1]][2] = cb.Board[from[1]][from[0]]
+		cb.Board[from[1]][from[0]] = 0
+		cb.Board[from[1]][3] = cb.Board[from[1]][0]
+		cb.Board[from[1]][0] = 0
+	} else {
+		cb.Board[from[1]][6] = cb.Board[from[1]][from[0]]
+		cb.Board[from[1]][from[0]] = 0
+		cb.Board[from[1]][5] = cb.Board[from[1]][7]
+		cb.Board[from[1]][7] = 0
+	}
+	if black {
+		cb.BlackCantCastleLeft = true
+		cb.BlackCantCastleRight = true
+	} else {
+		cb.WhiteCantCastleLeft = true
+		cb.WhiteCantCastleRight = true
+	}
+	if cb.IsCheck(!black) {
+		return false
+	}
+	return true
+}
+
+type MoveType int
+
+const (
+	RegularMove MoveType = iota
+	EnPassant
+	CastleLeft
+	CastleRight
+)
+
 // Checks if a piece can move from the from position, to the to position.
-func (cb *Chessboard) IsLegal(from, to [2]int8, enpassant bool) bool {
-	moves, enpassantkill := cb.PossibleMoves(from[0], from[1])
-	if !enpassant {
+func (cb *Chessboard) IsLegal(from, to [2]int8, movet MoveType) bool {
+	moves, enpassantkill, castleleft, castleright := cb.PossibleMoves(from[0], from[1])
+	switch movet {
+	case RegularMove:
 		for _, move := range moves {
 			if to == move {
 				return true
 			}
 		}
-	} else {
+	case EnPassant:
 		for _, move := range enpassantkill {
 			if to == move {
 				return true
 			}
 		}
+	case CastleLeft:
+		return castleleft
+	case CastleRight:
+		return castleright
 	}
 	return false
 }
 
+// canCastle checks if the king at x/y can castle. Returns 2 bools, first is `CanCastleLeft`, second is `CanCastleRight`.
+func (cb *Chessboard) canCastle(x, y int8) (CanCastleLeft, CanCastleRight bool) {
+	if cb.Board[y][x] != BlackKing && cb.Board[y][x] != WhiteKing {
+		return
+	}
+	black := IsBlack(cb.Board[y][x])
+	if ((black && !cb.BlackCantCastleLeft) || (!black && !cb.WhiteCantCastleLeft)) && cb.Board[y][x-1] == 0 && cb.Board[y][x-2] == 0 && cb.Board[y][x-3] == 0 {
+		CanCastleLeft = true
+	}
+	if ((black && !cb.BlackCantCastleRight) || (!black && !cb.WhiteCantCastleRight)) && cb.Board[y][x+1] == 0 && cb.Board[y][x+2] == 0 {
+		CanCastleRight = true
+	}
+	return
+}
+
 // Should return all legal moves by a piece at x, y.
-func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves, OutEnPassantKill [][2]int8) {
+func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves, OutEnPassantKill [][2]int8, CanCastleLeft, CanCastleRight bool) {
 	var (
 		Moves         [][2]int8
 		EnPassantKill *[2]int8
@@ -461,9 +562,13 @@ func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves, OutEnPassantKill [][2]
 		Moves = append(Moves, pawnMoves...)
 	case BlackKing:
 		Moves = append(Moves, cb.kingMoves(x, y, true)...)
+		CanCastleLeft, CanCastleRight = cb.canCastle(x, y)
 	case WhiteKing:
 		Moves = append(Moves, cb.kingMoves(x, y, false)...)
+		CanCastleLeft, CanCastleRight = cb.canCastle(x, y)
 	}
+
+	// Test if they're *really* possible.
 	from := [2]int8{x, y}
 	for _, move := range Moves {
 		if cb.TestMove(from, move) {
@@ -475,6 +580,12 @@ func (cb *Chessboard) PossibleMoves(x, y int8) (OutMoves, OutEnPassantKill [][2]
 		if cb.TestEnPassant(from, move) {
 			OutEnPassantKill = [][2]int8{move}
 		}
+	}
+	if CanCastleLeft {
+		CanCastleLeft = cb.TestCastle(from, true)
+	}
+	if CanCastleRight {
+		CanCastleRight = cb.TestCastle(from, false)
 	}
 	return
 }
