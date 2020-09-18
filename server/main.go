@@ -165,6 +165,7 @@ func handleConnection(conn net.Conn) {
 				if !GameRunning {
 					// TODO announce new game to spectators
 					GameRunning = true
+					NeedPromotion = None
 					Game = chess.NewChessboard()
 					BlackClient.Send(&chesspb.Team{Black: true})
 					WhiteClient.Send(&chesspb.Team{Black: false})

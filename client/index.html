@@ -18,7 +18,7 @@
 	<body>
 		<div id="maindiv">
 			<div class="header">
-				<div class="box">
+				<div class="connectionbox">
 					<details open>
 						<summary>Connection & Themes</summary>
 						<br>
@@ -49,6 +49,22 @@
 				<div id="chessboard">
 			</div>
 			<br>
+			<div class="promotionbox" id="whitepromotion" hidden>
+				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
+					<tr><td><span id="♖"></span></td></tr>
+					<tr><td><span id="♘"></span></td></tr>
+					<tr><td><span id="♕"></span></td></tr>
+					<tr><td><span id="♗"></span></td></tr>
+				</table>
+			</div>
+			<div class="promotionbox" id="blackpromotion" hidden>
+				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
+					<tr><td><span id="♜"></span></td></tr>
+					<tr><td><span id="♞"></span></td></tr>
+					<tr><td><span id="♚"></span></td></tr>
+					<tr><td><span id="♝"></span></td></tr>
+				</table>
+			</div>
 			<br>
 			<div id="header">
 				<div class="consolebox">

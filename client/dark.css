@@ -39,6 +39,18 @@ textarea {
 	width:100%;
 	display:inline;
 }
+
+.connectionbox {
+	display:inline-block;
+	border-style:double;
+	border-radius:5px;
+	border-width:2px;
+	padding:1em;
+	border-color:#D3D3D3;
+	background-color: #101010;
+	position:absolute;
+}
+
 .box {
 	display:inline-block;
 	border-style:double;
@@ -84,8 +96,9 @@ textarea {
 	border-width:1px;
 	padding:1em;
 	border-radius:15px;
-	background-color:black;
+	background-color:#101010;
 	box-shadow: 5px 10px #888888;
+	height:30em;
 }
 
 #chessboard {
@@ -95,13 +108,17 @@ textarea {
 }
 
 #title {
-	width:50%;
-	margin:auto;
-	display:inline-block;
+	width:100%;
 }
 
 #consolestyle {
 	font-family:monospace;
 	display:inline-block;
 	vertical-align:middle;
+}
+
+.promotionbox {
+	position:absolute;
+	right: 13%;
+	top: 15em;
 }

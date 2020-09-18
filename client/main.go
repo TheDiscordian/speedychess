@@ -181,7 +181,6 @@ func connect(this js.Value, args []js.Value) interface{} {
 			document.Call("getElementById", "join").Set("disabled", true)
 			document.Call("getElementById", "newgame").Set("disabled", true)
 		}()
-		// conn, err := net.Dial("tcp", document.Call("getElementById", "serveraddr").Get("value").String())
 		conn := websocket.NetConn(ctx, c, websocket.MessageBinary)
 
 		C = new(chesspb.Client)
