@@ -94,7 +94,7 @@ textarea {
 	border-radius:15px;
 	background-color:white;
 	box-shadow: 5px 10px #888888;
-	height:30em;
+	min-height:30em;
 }
 
 #chessboard {
