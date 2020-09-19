@@ -1,24 +1,58 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<link id="themes" href="style.css" rel="stylesheet" type="text/css"/>
-		<link id="pagestyle" href="default.css" rel="stylesheet" type="text/css"/>
-		<link rel="icon" type="image/png" href="images/favicon.png"/>
-		<meta charset="UTF-8">
-		<title>Chess</title>
-		<script language="javascript">
-			function changeCSS(cssFile) {
-					document.getElementById("pagestyle").setAttribute("href", cssFile);
-			}
-			function changeCSS2(cssFile) {
-					document.getElementById("themes").setAttribute("href", cssFile);
-			}
-		</script>
-	</head>
-	<body>
-		<div id="maindiv">
+    <head>
+	<link id="themes" href="style.css" rel="stylesheet" type="text/css"/>
+	<link id="pagestyle" href="default.css" rel="stylesheet" type="text/css"/>
+	<link rel="icon" type="image/png" href="images/favicon.png"/>
+	<meta charset="UTF-8">
+     <title>Chess</title>
+	<script language="javascript">
+		function changeCSS(cssFile) {
+			document.getElementById("pagestyle").setAttribute("href", cssFile);
+		}
+		function lightmode() {
+			document.body.style.background = "#D3D3D3";
+			document.body.style.color = "black";
+			document.getElementById("connectionbox").style.backgroundColor = "white";
+			document.getElementById("maindiv").style.background = "white";
+			document.getElementById("pawnpromo").style.backgroundColor = "white";
+		}
+		function darkmode() {
+			document.body.style.background = "#404040";
+			document.body.style.color = "white";
+			document.getElementById("connectionbox").style.backgroundColor = "#101010";
+			document.getElementById("maindiv").style.background = "#101010";
+			document.getElementById("pawnpromo").style.backgroundColor = "#101010";
+		}
+		
+	</script>
+    </head>
+	
+    <body>
+			<div id="whitepromotion" hidden>
+				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
+					<tr>
+						<td><span id="♖" onclick="selectPromotion('♖');"></span></td>
+						<td><span id="♘" onclick="selectPromotion('♘');"></span></td>
+						<td><span id="♕" onclick="selectPromotion('♕');"></span></td>
+						<td><span id="♗" onclick="selectPromotion('♗');"></span></td>
+					</tr>
+				</table>
+			</div>
+			<div id="blackpromotion" hidden>
+				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
+					<tr>
+						<td><span id="♜" onclick="selectPromotion('♜');"></span></td>
+						<td><span id="♞" onclick="selectPromotion('♞');"></span></td>
+						<td><span id="♛" onclick="selectPromotion('♛');"></span></td>
+						<td><span id="♝" onclick="selectPromotion('♝');"></span></td>
+					</tr>
+				</table>
+			</div>
+
+        <div id="maindiv">
 			<div class="header">
-				<div class="connectionbox">
+				<div id="connectionbox">
 					<details open>
 						<summary>Connection & Themes</summary>
 						<br>
@@ -27,17 +61,17 @@
 						<input id="serveraddr" value="127.0.0.1:8181">
 						<button id="connect" type="button">Connect</button>
 						<div style="padding-top:0.5em; text-align:center;">
-							<button id="join" type="button" disabled>Join (Player)</button>
+							<button id="join" type="button" disabled>Join (Player)</button> 
 							<button id="newgame" type="button" disabled>New Game</button>
 						</div>
 						<br>
 						<div class="box">
 							<h1 class="desc">Style Options</h1>
-							<button href="#" onclick="changeCSS('default.css', 0);">Default</button>
+							<button href="#" onclick="changeCSS('default.css', 0);">Default</button> 
 							<button href="#" onclick="changeCSS('alternative.css', 0);">Alternative</button>
 							<br>
-							<button href="#" onclick="changeCSS2('style.css', 0);">Light Mode</button>
-							<button href="#" onclick="changeCSS2('dark.css', 0);">Dark Mode</button>
+							<button href="#" onclick="lightmode()">Light Mode</button>
+							<button href="#" onclick="darkmode()">Dark Mode</button>
 						</div>
 					</details>
 				</div>
@@ -49,29 +83,13 @@
 				<div id="chessboard">
 			</div>
 			<br>
-			<div class="promotionbox" id="whitepromotion" hidden>
-				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
-					<tr><td><span id="♖" onclick="selectPromotion('♖');"></span></td></tr>
-					<tr><td><span id="♘" onclick="selectPromotion('♘');"></span></td></tr>
-					<tr><td><span id="♕" onclick="selectPromotion('♕');"></span></td></tr>
-					<tr><td><span id="♗" onclick="selectPromotion('♗');"></span></td></tr>
-				</table>
-			</div>
-			<div class="promotionbox" id="blackpromotion" hidden>
-				<table style="margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;">
-					<tr><td><span id="♜" onclick="selectPromotion('♜');"></span></td></tr>
-					<tr><td><span id="♞" onclick="selectPromotion('♞');"></span></td></tr>
-					<tr><td><span id="♚" onclick="selectPromotion('♚');"></span></td></tr>
-					<tr><td><span id="♝" onclick="selectPromotion('♝');"></span></td></tr>
-				</table>
-			</div>
 			<br>
 			<div id="header">
 				<div class="consolebox">
 					<span class="desc">Console</span>
 					<div id="consolestyle">
 						<pre id="console"></pre>
-					</div>
+					</div> 
 				</div>
 				<br>
 				<br>
@@ -100,5 +118,5 @@
 				);
 			</script>
 		</div>
-	</body>
+    </body>
 </html>

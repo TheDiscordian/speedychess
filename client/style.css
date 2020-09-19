@@ -31,12 +31,16 @@ textarea {
 	background-color:brown;
 }
 
+.notcoloured {
+	background-color:white;
+}
+
 .header {
 	width:100%;
 	display:inline;
 }
 
-.connectionbox {
+#connectionbox {
 	display:inline-block;
 	border-style:double;
 	border-radius:5px;
@@ -80,7 +84,6 @@ textarea {
 	text-align:center;
 	width:10em;
 	font-weight:bold;
-	color:#202020;
 	font-size:0.9em;
 	vertical-align:middle;
 }
@@ -113,8 +116,36 @@ textarea {
 	vertical-align:middle;
 }
 
-.promotionbox {
+#whitepromotion {
 	position:absolute;
-	right: 13%;
-	top: 15em;
+	border:solid;
+	width:20%;
+	border-width:1px;
+	padding:1em;
+	border-radius:15px;
+	background-color:white;
+	box-shadow: 5px 10px #888888;
+	z-index:100;
+	left: 0;
+	right: 0;
+	top:35%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#blackpromotion {
+	position:absolute;
+	border:solid;
+	width:20%;
+	border-width:1px;
+	padding:1em;
+	border-radius:15px;
+	background-color:white;
+	box-shadow: 5px 10px #888888;
+	z-index:100;
+	left: 0;
+	right: 0;
+	top:35%;
+	margin-left: auto;
+	margin-right: auto;
 }
