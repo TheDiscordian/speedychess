@@ -47,6 +47,27 @@ func NewChessboard() *Chessboard {
 	}}
 }
 
+// IsStalemated returns true if nobody can move.
+func (cb *Chessboard) IsStalemated() bool {
+	return cb.IsCheckmated(true) && cb.IsCheckmated(false)
+}
+
+// IsCheckmated returns true if the colour cannot move anywhere.
+func (cb *Chessboard) IsCheckmated(black bool) bool {
+	for y, _ := range cb.Board {
+		for x, p := range cb.Board[y] {
+			if p == 0 || IsBlack(p) != black {
+				continue
+			}
+			moves, enpassant, castleleft, castleright := cb.PossibleMoves(int8(x), int8(y))
+			if len(moves) > 0 || len(enpassant) > 0 || castleleft || castleright {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // Threat returns all threatened spaces by a particular colour.
 func (cb *Chessboard) Threat(black bool) (threatBoard [8][8]bool) {
 	var threatMoves [][2]int8
