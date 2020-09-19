@@ -232,9 +232,9 @@ func handleConnection(conn net.Conn) {
 						NeedPromotion = White
 					}
 					if black {
-						BlackClient.Send(new(chesspb.Promote))
+						BlackClient.Send(&chesspb.Promote{X: v.Tx, Y: v.Ty})
 					} else {
-						WhiteClient.Send(new(chesspb.Promote))
+						WhiteClient.Send(&chesspb.Promote{X: v.Tx, Y: v.Ty})
 					}
 				}
 			case chess.EnPassant:

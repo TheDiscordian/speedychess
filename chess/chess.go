@@ -486,7 +486,7 @@ func (cb *Chessboard) PromotePawn(x, y int8, to Piece) bool {
 	}
 	piece := cb.Board[y][x]
 	black := IsBlack(piece)
-	switch piece {
+	switch to {
 	case WhiteRook, WhiteKnight, WhiteQueen, WhiteBishop:
 		if !black {
 			cb.Board[y][x] = to

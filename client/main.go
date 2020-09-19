@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"syscall/js"
 	"time"
+	"unicode/utf8"
 
 	"github.com/TheDiscordian/speedychess/chess"
 	"github.com/TheDiscordian/speedychess/chesspb"
@@ -20,6 +21,7 @@ var (
 	Game       *chess.Chessboard
 	Black      bool
 	MyTurn     bool
+	Promotion  *[2]int8
 	StoredMove []int8 // nil or len(2)
 )
 
@@ -74,6 +76,14 @@ func drawBoard(flip bool) string {
 		}
 	}
 	return "<table style=\"margin:-1em auto;padding-top:0px;cursor:pointer;table-layout: fixed;\">" + string(output) + "<br></table>"
+}
+
+func selectPromotion(this js.Value, args []js.Value) interface{} {
+	if Promotion != nil {
+		r, _ := utf8.DecodeRuneInString(args[0].String())
+		C.Send(&chesspb.Promote{X: uint32(Promotion[0]), Y: uint32(Promotion[1]), To: r})
+	}
+	return nil
 }
 
 func selectPiece(this js.Value, args []js.Value) interface{} {
@@ -206,6 +216,21 @@ func connect(this js.Value, args []js.Value) interface{} {
 			}
 
 			switch v := msg.(type) {
+			case *chesspb.Promote:
+				if v.To == 0 {
+					Promotion = &[2]int8{int8(v.X), int8(v.Y)}
+					if Black {
+						document.Call("getElementById", "blackpromotion").Set("hidden", false)
+					} else {
+						document.Call("getElementById", "whitepromotion").Set("hidden", false)
+					}
+				} else {
+					Game.PromotePawn(int8(v.X), int8(v.Y), chess.Piece(v.To))
+					Promotion = nil
+					document.Call("getElementById", "blackpromotion").Set("hidden", true)
+					document.Call("getElementById", "whitepromotion").Set("hidden", true)
+					document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
+				}
 			case *chesspb.Ping:
 				//LogToConsole("[DEBUG] Ping!")
 				C.Send(v)
@@ -228,6 +253,9 @@ func connect(this js.Value, args []js.Value) interface{} {
 				}
 				Game = chess.NewChessboard()
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
+				Promotion = nil
+				document.Call("getElementById", "blackpromotion").Set("hidden", true)
+				document.Call("getElementById", "whitepromotion").Set("hidden", true)
 			case *chesspb.Move:
 				switch chess.MoveType(v.MoveType) {
 				case chess.RegularMove:
@@ -267,6 +295,7 @@ func setup() {
 	document.Call("getElementById", "join").Call("setAttribute", "onClick", "joingame();")
 
 	window.Set("selectpiece", js.FuncOf(selectPiece))
+	window.Set("selectPromotion", js.FuncOf(selectPromotion))
 }
 
 func main() {
