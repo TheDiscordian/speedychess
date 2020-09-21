@@ -234,10 +234,12 @@ func connect(this js.Value, args []js.Value) interface{} {
 			case *chesspb.Ping:
 				//LogToConsole("[DEBUG] Ping!")
 				C.Send(v)
+			case *chesspb.OpponentJoined:
+				document.Call("getElementById", "newgame").Set("disabled", false)
+				LogToConsole("Opponent joined, game is ready to begin!")
 			case *chesspb.Player:
 				if v.One {
 					LogToConsole("Joined as player 1.")
-					document.Call("getElementById", "newgame").Set("disabled", false)
 				} else {
 					LogToConsole("Joined as player 2.")
 				}
@@ -257,18 +259,37 @@ func connect(this js.Value, args []js.Value) interface{} {
 				document.Call("getElementById", "blackpromotion").Set("hidden", true)
 				document.Call("getElementById", "whitepromotion").Set("hidden", true)
 			case *chesspb.Move:
+				var check bool
 				switch chess.MoveType(v.MoveType) {
 				case chess.RegularMove:
-					Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+					check = Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 				case chess.EnPassant:
-					Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+					check = Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 				case chess.CastleLeft:
-					Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
+					check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
 				case chess.CastleRight:
-					Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
+					check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
+				}
+				if check {
+					if MyTurn {
+						LogToConsole("Your opponent is in check.")
+					} else {
+						LogToConsole("You are in check.")
+					}
 				}
 				document.Call("getElementById", "chessboard").Set("innerHTML", drawBoard(Black))
 				MyTurn = !MyTurn
+			case *chesspb.GameComplete:
+				switch v.Result {
+				case chesspb.GameComplete_Stalemate:
+					LogToConsole("Game complete! Stalemate.")
+				case chesspb.GameComplete_WhiteWin:
+					LogToConsole("Game complete! White wins!")
+				case chesspb.GameComplete_BlackWin:
+					LogToConsole("Game complete! Black wins!")
+				}
+				Game = nil
+				document.Call("getElementById", "newgame").Set("disabled", true)
 			case *chesspb.OpponentLeft:
 				LogToConsole("Opponent left, need to rejoin.")
 				document.Call("getElementById", "newgame").Set("disabled", true)

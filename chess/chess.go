@@ -19,6 +19,21 @@ const (
 	WhitePawn   Piece = '♙'
 )
 
+// Value returns a piece's value. Returns 0 for king.
+func Value(p Piece) int {
+	switch p {
+	case BlackPawn, WhitePawn:
+		return 1
+	case BlackKnight, WhiteKnight, BlackBishop, WhiteBishop:
+		return 3
+	case BlackRook, WhiteRook:
+		return 5
+	case BlackQueen, WhiteQueen:
+		return 9
+	}
+	return 0
+}
+
 func IsBlack(p Piece) bool {
 	switch p {
 	default:
@@ -45,6 +60,19 @@ func NewChessboard() *Chessboard {
 		[8]Piece{'♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'},
 		[8]Piece{'♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'},
 	}}
+}
+
+// TotalValue returns the total value worth of pieces the specified colour has
+func (cb *Chessboard) TotalValue(black bool) (value int) {
+	for y, _ := range cb.Board {
+		for x, p := range cb.Board[y] {
+			if p == 0 || IsBlack(p) != black {
+				continue
+			}
+			value += Value(p)
+		}
+	}
+	return
 }
 
 // IsStalemated returns true if nobody can move.
@@ -376,7 +404,7 @@ func (cb *Chessboard) TestMove(from, to [2]int8) bool {
 	return true
 }
 
-// Performs a move and returns whether a move would result in a check for the opposing player
+// Performs a move and returns true if a move would result in a check for the opposing player
 func (cb *Chessboard) DoMove(from, to [2]int8) bool {
 	black := IsBlack(cb.Board[from[1]][from[0]])
 	cb.CanBeEnPassant = nil
@@ -409,9 +437,9 @@ func (cb *Chessboard) DoMove(from, to [2]int8) bool {
 	cb.Board[to[1]][to[0]] = cb.Board[from[1]][from[0]]
 	cb.Board[from[1]][from[0]] = 0
 	if cb.IsCheck(!IsBlack(cb.Board[to[1]][to[0]])) {
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 // Returns false if the move would put the player moving in check
@@ -433,7 +461,7 @@ func (cb *Chessboard) TestEnPassant(from, to [2]int8) bool {
 	return true
 }
 
-// Performs a move and returns whether a move would result in a check for the opposing player
+// Performs a move and returns true if a move would result in a check for the opposing player
 func (cb *Chessboard) DoEnPassant(from, to [2]int8) bool {
 	var modifier int8 // y modifier
 	if IsBlack(cb.Board[from[1]][from[0]]) {
@@ -446,9 +474,9 @@ func (cb *Chessboard) DoEnPassant(from, to [2]int8) bool {
 	cb.Board[from[1]][from[0]] = 0
 	cb.CanBeEnPassant = nil
 	if cb.IsCheck(!IsBlack(cb.Board[to[1]+modifier][to[0]])) {
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 // Returns false if the move would put the player moving in check
@@ -473,7 +501,7 @@ func (cb *Chessboard) TestCastle(from [2]int8, left bool) bool {
 	return true
 }
 
-// Performs a move and returns whether a move would result in a check for the opposing player
+// Performs a move and returns true if a move would result in a check for the opposing player
 func (cb *Chessboard) DoCastle(from [2]int8, left bool) bool {
 	black := IsBlack(cb.Board[from[1]][from[0]])
 	if left {
@@ -495,9 +523,9 @@ func (cb *Chessboard) DoCastle(from [2]int8, left bool) bool {
 		cb.WhiteCantCastleRight = true
 	}
 	if cb.IsCheck(!black) {
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 // PromotePawn promotes a pawn at x, y, returns true on success, and false on failure.

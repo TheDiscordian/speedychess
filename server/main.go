@@ -87,6 +87,7 @@ func handleConnection(conn net.Conn) {
 			}
 			WhiteClient = nil
 			BlackClient = nil
+			NeedPromotion = None
 		}
 
 		//cleanup
@@ -106,6 +107,9 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("Too many requests from", conn.RemoteAddr().String())
 			break
 		}
+		if atomic.LoadInt32(players) == 0 {
+			playern = -1
+		}
 
 		conn.SetReadDeadline(time.Now().Add(READER_MAXWAIT))
 		err := chesspb.ReadMessage(reader, &msg) //read message into msg
@@ -114,9 +118,6 @@ func handleConnection(conn net.Conn) {
 				fmt.Println(conn.RemoteAddr().String(), err)
 			}
 			break
-		}
-		if atomic.LoadInt32(players) == 0 {
-			playern = -1
 		}
 
 		reqs++
@@ -145,9 +146,11 @@ func handleConnection(conn net.Conn) {
 					if WhiteClient == nil {
 						WhiteClient = c
 						color = White
+						BlackClient.Send(new(chesspb.OpponentJoined))
 					} else {
 						BlackClient = c
 						color = Black
+						WhiteClient.Send(new(chesspb.OpponentJoined))
 					}
 					c.Send(&chesspb.Player{One: false})
 				} else {
@@ -221,9 +224,10 @@ func handleConnection(conn net.Conn) {
 				c.Send(&chesspb.Error{Msg: "That's not legal."})
 				continue
 			}
+			var check bool
 			switch chess.MoveType(v.MoveType) {
 			case chess.RegularMove:
-				Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				check = Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 				if (v.Ty == 7 || v.Ty == 0) && (Game.Board[v.Ty][v.Tx] == chess.WhitePawn || Game.Board[v.Ty][v.Tx] == chess.BlackPawn) {
 					black := chess.IsBlack(Game.Board[v.Ty][v.Tx])
 					if black {
@@ -238,15 +242,38 @@ func handleConnection(conn net.Conn) {
 					}
 				}
 			case chess.EnPassant:
-				Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				check = Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 			case chess.CastleLeft:
-				Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
+				check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
 			case chess.CastleRight:
-				Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
+				check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
 			}
+
 			WhiteClient.Send(v)
 			BlackClient.Send(v)
 			BlackMove = !BlackMove
+
+			if check {
+				blackCheckmate := Game.IsCheckmated(true)
+				whiteCheckmate := Game.IsCheckmated(false)
+				if !(blackCheckmate || whiteCheckmate) {
+					continue
+				}
+				result := new(chesspb.GameComplete)
+
+				if blackCheckmate && !whiteCheckmate {
+					result.Result = chesspb.GameComplete_WhiteWin
+				} else if whiteCheckmate && !blackCheckmate {
+					result.Result = chesspb.GameComplete_BlackWin
+				}
+				WhiteClient.Send(result)
+				BlackClient.Send(result)
+				atomic.StoreInt32(players, 0)
+				GameRunning = false
+				BlackMove = false
+				WhiteClient = nil
+				BlackClient = nil
+			}
 		}
 	}
 }
