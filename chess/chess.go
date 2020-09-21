@@ -65,7 +65,7 @@ func NewChessboard() *Chessboard {
 // TotalValue returns the total value worth of pieces the specified colour has
 func (cb *Chessboard) TotalValue(black bool) (value int) {
 	for y, _ := range cb.Board {
-		for x, p := range cb.Board[y] {
+		for _, p := range cb.Board[y] {
 			if p == 0 || IsBlack(p) != black {
 				continue
 			}
