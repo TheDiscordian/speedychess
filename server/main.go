@@ -272,10 +272,6 @@ func handleConnection(conn net.Conn) {
 			blackCheckmate := Game.IsCheckmated(true)
 			whiteCheckmate := Game.IsCheckmated(false)
 			if blackCheckmate || whiteCheckmate {
-
-				if !(blackCheckmate || whiteCheckmate) {
-					continue
-				}
 				result := new(chesspb.GameComplete)
 
 				if blackCheckmate && !whiteCheckmate {
