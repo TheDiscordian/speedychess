@@ -29,8 +29,8 @@ const (
 	WRITER_MAXBUFFER = 180               //how many packets to queue before dropping the connection
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
 
-	ANIMATION_STEPS = 60  //how many frames to animate per move
-	ANIMATION_DELAY = 5   //time between each frame of animation, in milliseconds
+	ANIMATION_STEPS = 20  //how many frames to animate per move
+	ANIMATION_DELAY = 15  //time between each frame of animation, in milliseconds
 	TILE_SIZE       = 1.5 //tile size in em
 )
 
@@ -49,8 +49,8 @@ func animate(from, to [2]int8) {
 	pieceStyle := piece.Get("style")
 	pieceStyle.Set("position", "relative")
 
-	xStep := float64(to[0]-from[0]) * 1.5 / ANIMATION_STEPS
-	yStep := float64(to[1]-from[1]) * 1.5 / ANIMATION_STEPS
+	xStep := float64(to[0]-from[0]) * TILE_SIZE / ANIMATION_STEPS
+	yStep := float64(to[1]-from[1]) * TILE_SIZE / ANIMATION_STEPS
 	if Black {
 		xStep *= -1
 		yStep *= -1
