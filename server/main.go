@@ -24,7 +24,7 @@ const (
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
 	REQS_TIME        = 1 * time.Second   //
 	REQS_MAX         = 9                 //max requests allowed within REQS_TIME
-	PING_INTERVAL    = 10 * time.Second
+	PING_INTERVAL    = 2 * time.Second
 )
 
 type Color int
@@ -40,10 +40,11 @@ var (
 	GameRunning bool
 	Game        *chess.Chessboard
 
-	BlackClient   *chesspb.Client
-	WhiteClient   *chesspb.Client
-	BlackMove     bool  // if true, it's black's move
-	NeedPromotion Color // represents a colour that needs to promote a pawn for the game to continue
+	BlackClient    *chesspb.Client
+	WhiteClient    *chesspb.Client
+	BlackMove      bool  // if true, it's black's move
+	NeedPromotion  Color // represents a colour that needs to promote a pawn for the game to continue
+	ObserverClient *chesspb.Client
 )
 
 // TODO keep observers alive
@@ -54,6 +55,9 @@ func keepAlive() {
 		}
 		if BlackClient != nil {
 			BlackClient.Send(new(chesspb.Ping))
+		}
+		if ObserverClient != nil {
+			ObserverClient.Send(new(chesspb.Ping))
 		}
 		time.Sleep(PING_INTERVAL)
 	}
@@ -89,6 +93,9 @@ func handleConnection(conn net.Conn) {
 			BlackClient = nil
 			NeedPromotion = None
 		}
+		if playern == 3 {
+			ObserverClient = nil
+		}
 
 		//cleanup
 		conn.Close()
@@ -107,7 +114,7 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("Too many requests from", conn.RemoteAddr().String())
 			break
 		}
-		if atomic.LoadInt32(players) == 0 {
+		if playern != 3 && atomic.LoadInt32(players) == 0 {
 			playern = -1
 		}
 
@@ -158,6 +165,7 @@ func handleConnection(conn net.Conn) {
 				}
 			} else {
 				playern = 3 // spectator
+				ObserverClient = c
 			}
 		case *chesspb.NewGame:
 			if playern == 0 {
@@ -172,6 +180,9 @@ func handleConnection(conn net.Conn) {
 					Game = chess.NewChessboard()
 					BlackClient.Send(&chesspb.Team{Black: true})
 					WhiteClient.Send(&chesspb.Team{Black: false})
+					if ObserverClient != nil {
+						ObserverClient.Send(new(chesspb.Team))
+					}
 				} else {
 					c.Send(&chesspb.Error{Msg: "Game already started."})
 				}
@@ -194,6 +205,9 @@ func handleConnection(conn net.Conn) {
 			NeedPromotion = None
 			WhiteClient.Send(v)
 			BlackClient.Send(v)
+			if ObserverClient != nil {
+				ObserverClient.Send(v)
+			}
 		case *chesspb.Move:
 			if !GameRunning {
 				c.Send(&chesspb.Error{Msg: "Game has not started."})
@@ -208,7 +222,7 @@ func handleConnection(conn net.Conn) {
 					continue
 				}
 			}
-			if (color != Black && BlackMove) || (color != White && !BlackMove) {
+			if playern == 3 || (color != Black && BlackMove) || (color != White && !BlackMove) {
 				c.Send(&chesspb.Error{Msg: "It's not your turn."})
 				continue
 			}
@@ -224,10 +238,9 @@ func handleConnection(conn net.Conn) {
 				c.Send(&chesspb.Error{Msg: "That's not legal."})
 				continue
 			}
-			var check bool
 			switch chess.MoveType(v.MoveType) {
 			case chess.RegularMove:
-				check = Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 				if (v.Ty == 7 || v.Ty == 0) && (Game.Board[v.Ty][v.Tx] == chess.WhitePawn || Game.Board[v.Ty][v.Tx] == chess.BlackPawn) {
 					black := chess.IsBlack(Game.Board[v.Ty][v.Tx])
 					if black {
@@ -242,20 +255,24 @@ func handleConnection(conn net.Conn) {
 					}
 				}
 			case chess.EnPassant:
-				check = Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
+				Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 			case chess.CastleLeft:
-				check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
+				Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, true)
 			case chess.CastleRight:
-				check = Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
+				Game.DoCastle([2]int8{int8(v.Fx), int8(v.Fy)}, false)
 			}
 
 			WhiteClient.Send(v)
 			BlackClient.Send(v)
+			if ObserverClient != nil {
+				ObserverClient.Send(v)
+			}
 			BlackMove = !BlackMove
 
-			if check {
-				blackCheckmate := Game.IsCheckmated(true)
-				whiteCheckmate := Game.IsCheckmated(false)
+			blackCheckmate := Game.IsCheckmated(true)
+			whiteCheckmate := Game.IsCheckmated(false)
+			if blackCheckmate || whiteCheckmate {
+
 				if !(blackCheckmate || whiteCheckmate) {
 					continue
 				}
@@ -268,9 +285,15 @@ func handleConnection(conn net.Conn) {
 				}
 				WhiteClient.Send(result)
 				BlackClient.Send(result)
+				if ObserverClient != nil {
+					ObserverClient.Send(result)
+				}
+				playern = -1
 				atomic.StoreInt32(players, 0)
 				GameRunning = false
 				BlackMove = false
+				WhiteClient.Send(new(chesspb.Ping))
+				BlackClient.Send(new(chesspb.Ping))
 				WhiteClient = nil
 				BlackClient = nil
 			}

@@ -130,7 +130,6 @@ func (cb *Chessboard) move(x, y int8, black bool) (*[2]int8, bool) {
 }
 
 // pawnMoves returns both moves and threatened spaces
-// TODO en passant
 func (cb *Chessboard) pawnMoves(x, y int8, black bool) (Moves, Threats [][2]int8, EnPassantKill *[2]int8) {
 	if black {
 		// regular movement

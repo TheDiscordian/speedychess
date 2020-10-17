@@ -28,6 +28,10 @@ var (
 const (
 	WRITER_MAXBUFFER = 180               //how many packets to queue before dropping the connection
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
+
+	ANIMATION_STEPS = 60  //how many frames to animate per move
+	ANIMATION_DELAY = 5   //time between each frame of animation, in milliseconds
+	TILE_SIZE       = 1.5 //tile size in em
 )
 
 func LogToConsole(txt string) {
@@ -36,6 +40,29 @@ func LogToConsole(txt string) {
 
 	console := document.Call("getElementById", "console")
 	console.Set("innerText", txt+"\n"+console.Get("innerText").String())
+}
+
+func animate(from, to [2]int8) {
+	window := js.Global()
+	document := window.Get("document")
+	piece := document.Call("getElementById", fmt.Sprintf("%dx%d", from[0], from[1])).Get("children").Index(0)
+	pieceStyle := piece.Get("style")
+	pieceStyle.Set("position", "relative")
+
+	xStep := float64(to[0]-from[0]) * 1.5 / ANIMATION_STEPS
+	yStep := float64(to[1]-from[1]) * 1.5 / ANIMATION_STEPS
+	if Black {
+		xStep *= -1
+		yStep *= -1
+	}
+	var xCur, yCur float64
+	for i := 0; i < ANIMATION_STEPS; i++ {
+		xCur += xStep
+		yCur += yStep
+		pieceStyle.Set("top", fmt.Sprintf("%.2fem", yCur))
+		pieceStyle.Set("left", fmt.Sprintf("%.2fem", xCur))
+		time.Sleep(ANIMATION_DELAY * time.Millisecond)
+	}
 }
 
 func drawBoard(flip bool) string {
@@ -167,6 +194,11 @@ func joinGame(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
+func watchGame(this js.Value, args []js.Value) interface{} {
+	C.Send(&chesspb.Join{Player: false})
+	return nil
+}
+
 func connect(this js.Value, args []js.Value) interface{} {
 	go func() { // blocks, so needs to be in a goroutine
 		Game = nil
@@ -262,6 +294,7 @@ func connect(this js.Value, args []js.Value) interface{} {
 				var check bool
 				switch chess.MoveType(v.MoveType) {
 				case chess.RegularMove:
+					animate([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 					check = Game.DoMove([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
 				case chess.EnPassant:
 					check = Game.DoEnPassant([2]int8{int8(v.Fx), int8(v.Fy)}, [2]int8{int8(v.Tx), int8(v.Ty)})
@@ -313,6 +346,7 @@ func setup() {
 	window.Set("newgame", js.FuncOf(newGame))
 	document.Call("getElementById", "newgame").Call("setAttribute", "onClick", "newgame();")
 	window.Set("joingame", js.FuncOf(joinGame))
+	window.Set("watchgame", js.FuncOf(watchGame))
 	document.Call("getElementById", "join").Call("setAttribute", "onClick", "joingame();")
 
 	window.Set("selectpiece", js.FuncOf(selectPiece))
