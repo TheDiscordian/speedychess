@@ -13,6 +13,8 @@ td {
 	border: 1px solid;
 	margin-top: -0.05em;
 	margin-right: -1px;
+	background-color:white;
+	border-color:black;
 }
 
 input {
@@ -29,10 +31,6 @@ textarea {
 
 .coloured {
 	background-color:brown;
-}
-
-.notcoloured {
-	background-color:white;
 }
 
 .header {

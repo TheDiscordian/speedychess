@@ -72,7 +72,7 @@ func drawBoard(flip bool) string {
 
 	createTile := func(x, y int, r chess.Piece) {
 		if !brown {
-			output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="notcoloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
+			output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
 		} else {
 			output = append(output, []rune(fmt.Sprintf(`<td id="%dx%d" class="coloured" onclick="selectpiece(%d,%d)">`, x, y, x, y))...)
 		}
