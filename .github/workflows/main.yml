@@ -43,3 +43,9 @@ jobs:
           cd client
           make config
           make dev
+          
+      #
+      - name: Build AI
+        run: |
+          cd ai
+          go build
