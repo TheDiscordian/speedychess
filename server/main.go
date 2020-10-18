@@ -24,7 +24,7 @@ const (
 	READER_MAXWAIT   = 120 * time.Second //max time to receive no full packet from client
 	REQS_TIME        = 1 * time.Second   //
 	REQS_MAX         = 9                 //max requests allowed within REQS_TIME
-	PING_INTERVAL    = 2 * time.Second
+	PING_INTERVAL    = 25 * time.Second
 )
 
 type Color int
