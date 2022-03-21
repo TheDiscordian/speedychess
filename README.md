@@ -2,6 +2,8 @@
 
 A simple chess library, server, client, and AI (eventually).
 
+NOTICE: This was a fun little project Discordian & Runite made a while back, it will likely never be complete. Enjoy!
+
 ## Building the server
 
 ### Requirements
